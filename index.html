@@ -496,8 +496,9 @@
       } = await supabaseClient.auth.getUser();
 
       if (!user) {
-        console.log("Nenhum usuário conectado.");
-        return;
+        status.textContent = "ERRO";
+        message.textContent = "Faça login para salvar uma memória.";
+        return false;
       }
 
       const { error } = await supabaseClient
@@ -509,10 +510,15 @@
 
       if (error) {
         console.error("Erro ao salvar memória:", error);
-        return;
+        status.textContent = "ERRO";
+        message.textContent = "Não consegui salvar a memória.";
+        return false;
       }
 
       console.log("Memória salva:", texto);
+      status.textContent = "MEMÓRIA SALVA";
+      message.textContent = "Lembrete guardado: " + texto;
+      return true;
     }
 
     verificarUsuario();
@@ -584,7 +590,7 @@
 
       });
 
-      recognition.onresult = (event) => {
+      recognition.onresult = async (event) => {
 
         let transcript = "";
 
@@ -599,8 +605,34 @@
 
         }
 
-        message.textContent =
-          transcript;
+        transcript = transcript.trim();
+
+        message.textContent = transcript;
+
+        // Comandos de memória:
+        // "lembre que..." ou "salve na memória que..."
+        const textoNormalizado = transcript
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\\u0300-\\u036f]/g, "");
+
+        let memoria = null;
+
+        if (textoNormalizado.startsWith("lembre que ")) {
+          memoria = transcript.substring(11).trim();
+        } else if (
+          textoNormalizado.startsWith("salve na memoria que ")
+        ) {
+          memoria = transcript.substring(21).trim();
+        } else if (
+          textoNormalizado.startsWith("salvar na memoria que ")
+        ) {
+          memoria = transcript.substring(22).trim();
+        }
+
+        if (memoria) {
+          await salvarMemoria(memoria);
+        }
 
       };
 
