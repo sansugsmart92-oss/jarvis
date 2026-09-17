@@ -27,7 +27,7 @@
       width: 100%;
       max-width: 500px;
       min-height: 100vh;
-      padding: 40px 25px;
+      padding: 30px 25px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -38,9 +38,62 @@
     .title {
       font-size: 34px;
       letter-spacing: 12px;
-      margin-bottom: 55px;
+      margin-bottom: 35px;
       text-shadow: 0 0 15px #008cff;
     }
+
+    /* LOGIN */
+
+    .login {
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 25px;
+    }
+
+    .login input {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 10px;
+      border: 1px solid #008cff;
+      border-radius: 8px;
+      background: rgba(0, 140, 255, 0.05);
+      color: white;
+      outline: none;
+      font-size: 15px;
+    }
+
+    .login input::placeholder {
+      color: #6d8794;
+    }
+
+    .login button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 7px;
+      border: 1px solid #008cff;
+      border-radius: 8px;
+      background: rgba(0, 140, 255, 0.08);
+      color: #00bfff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .loginMessage {
+      margin-top: 12px;
+      color: #8aa8b8;
+      font-size: 13px;
+      min-height: 20px;
+    }
+
+    .logout {
+      display: none;
+      margin-top: 15px;
+      color: #6fd7ff;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* CORE */
 
     .core {
       width: 190px;
@@ -105,7 +158,7 @@
     }
 
     .status {
-      margin-top: 45px;
+      margin-top: 35px;
       font-size: 14px;
       letter-spacing: 4px;
       color: #6fd7ff;
@@ -120,7 +173,7 @@
     }
 
     .button {
-      margin-top: 45px;
+      margin-top: 35px;
       width: 100%;
       max-width: 300px;
       padding: 17px;
@@ -141,6 +194,10 @@
     .error {
       color: #ff5555;
     }
+
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 
@@ -150,21 +207,59 @@
 
     <div class="title">JARVIS</div>
 
-    <div class="core" id="core">
-      <div class="center"></div>
+    <!-- LOGIN -->
+    <div class="login" id="loginArea">
+
+      <input
+        type="email"
+        id="email"
+        placeholder="Seu e-mail"
+        autocomplete="email"
+      >
+
+      <input
+        type="password"
+        id="password"
+        placeholder="Sua senha"
+        autocomplete="current-password"
+      >
+
+      <button id="loginButton">
+        ENTRAR
+      </button>
+
+      <button id="signupButton">
+        CRIAR CONTA
+      </button>
+
+      <div class="loginMessage" id="loginMessage"></div>
+
     </div>
 
-    <div class="status" id="status">
-      SISTEMA ONLINE
+    <div class="logout" id="logoutButton">
+      SAIR DA CONTA
     </div>
 
-    <div class="message" id="message">
-      Aguardando seu comando...
-    </div>
+    <!-- JARVIS -->
+    <div id="jarvisInterface" class="hidden">
 
-    <button class="button" id="talkButton">
-      🎙️ FALAR COM JARVIS
-    </button>
+      <div class="core" id="core">
+        <div class="center"></div>
+      </div>
+
+      <div class="status" id="status">
+        SISTEMA ONLINE
+      </div>
+
+      <div class="message" id="message">
+        Aguardando seu comando...
+      </div>
+
+      <button class="button" id="talkButton">
+        🎙️ FALAR COM JARVIS
+      </button>
+
+    </div>
 
   </main>
 
@@ -172,37 +267,242 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
+
     /*
-      ================================
-      CONFIGURAÇÃO DO SUPABASE
-      ================================
-
-      COLOQUE AQUI:
-
-      1. Project URL
-      2. Publishable key / anon key
-
-      NÃO coloque a service_role key aqui.
+    ========================================
+    CONFIGURAÇÃO SUPABASE
+    ========================================
     */
 
-    const SUPABASE_URL = "https://zdkbtdvcjkivqdnrsetb.supabase.co/rest/v1/";
-    const SUPABASE_KEY = "sb_publishable_SvP8vEpNWFoICLVskSlCfQ_8VUmN_PT";
+    const SUPABASE_URL =
+      "https://zdkbtdvcjkivqdnrsetb.supabase.co";
 
-    const supabaseClient = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
-    );
+    const SUPABASE_KEY =
+      "sb_publishable_SvP8vEpNWFoICLVskSlCfQ_8VUmN_PT";
 
-    console.log("Supabase conectado.");
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
+
+    console.log("Supabase inicializado.");
+
+    /*
+    ========================================
+    ELEMENTOS
+    ========================================
+    */
+
+    const loginArea =
+      document.getElementById("loginArea");
+
+    const jarvisInterface =
+      document.getElementById("jarvisInterface");
+
+    const logoutButton =
+      document.getElementById("logoutButton");
+
+    const emailInput =
+      document.getElementById("email");
+
+    const passwordInput =
+      document.getElementById("password");
+
+    const loginButton =
+      document.getElementById("loginButton");
+
+    const signupButton =
+      document.getElementById("signupButton");
+
+    const loginMessage =
+      document.getElementById("loginMessage");
+
+    /*
+    ========================================
+    LOGIN
+    ========================================
+    */
+
+    loginButton.addEventListener("click", async () => {
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+
+        loginMessage.textContent =
+          "Digite seu e-mail e sua senha.";
+
+        return;
+      }
+
+      loginMessage.textContent =
+        "Entrando...";
+
+      const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+      if (error) {
+
+        loginMessage.textContent =
+          "Erro: " + error.message;
+
+        return;
+      }
+
+      console.log("Usuário conectado:", data.user);
+
+      loginMessage.textContent =
+        "Login realizado!";
+
+      mostrarJarvis(data.user);
+
+    });
+
+    /*
+    ========================================
+    CRIAR CONTA
+    ========================================
+    */
+
+    signupButton.addEventListener("click", async () => {
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+
+        loginMessage.textContent =
+          "Digite seu e-mail e uma senha.";
+
+        return;
+      }
+
+      if (password.length < 6) {
+
+        loginMessage.textContent =
+          "A senha precisa ter pelo menos 6 caracteres.";
+
+        return;
+      }
+
+      loginMessage.textContent =
+        "Criando sua conta...";
+
+      const { data, error } =
+        await supabaseClient.auth.signUp({
+          email: email,
+          password: password
+        });
+
+      if (error) {
+
+        loginMessage.textContent =
+          "Erro: " + error.message;
+
+        return;
+      }
+
+      if (data.session) {
+
+        loginMessage.textContent =
+          "Conta criada com sucesso!";
+
+        mostrarJarvis(data.user);
+
+      } else {
+
+        loginMessage.textContent =
+          "Conta criada! Verifique seu e-mail para confirmar.";
+
+      }
+
+    });
+
+    /*
+    ========================================
+    MOSTRAR JARVIS
+    ========================================
+    */
+
+    function mostrarJarvis(user) {
+
+      loginArea.style.display = "none";
+
+      jarvisInterface.classList.remove("hidden");
+
+      logoutButton.style.display = "block";
+
+      console.log(
+        "JARVIS conectado ao usuário:",
+        user.id
+      );
+
+    }
+
+    /*
+    ========================================
+    LOGOUT
+    ========================================
+    */
+
+    logoutButton.addEventListener("click", async () => {
+
+      await supabaseClient.auth.signOut();
+
+      jarvisInterface.classList.add("hidden");
+
+      loginArea.style.display = "block";
+
+      logoutButton.style.display = "none";
+
+      loginMessage.textContent =
+        "Sessão encerrada.";
+
+    });
+
+    /*
+    ========================================
+    VERIFICAR SESSÃO
+    ========================================
+    */
+
+    async function verificarUsuario() {
+
+      const {
+        data: { user }
+      } = await supabaseClient.auth.getUser();
+
+      if (user) {
+
+        mostrarJarvis(user);
+
+      }
+
+    }
+
+    verificarUsuario();
+
   </script>
 
-  <!-- JARVIS / RECONHECIMENTO DE VOZ -->
+  <!-- RECONHECIMENTO DE VOZ -->
   <script>
 
-    const button = document.getElementById("talkButton");
-    const status = document.getElementById("status");
-    const message = document.getElementById("message");
-    const core = document.getElementById("core");
+    const button =
+      document.getElementById("talkButton");
+
+    const status =
+      document.getElementById("status");
+
+    const message =
+      document.getElementById("message");
+
+    const core =
+      document.getElementById("core");
 
     const SpeechRecognition =
       window.SpeechRecognition ||
@@ -210,7 +510,8 @@
 
     if (!SpeechRecognition) {
 
-      status.textContent = "NÃO SUPORTADO";
+      status.textContent =
+        "NÃO SUPORTADO";
 
       message.textContent =
         "Seu navegador não oferece reconhecimento de voz.";
@@ -221,7 +522,8 @@
 
     } else {
 
-      const recognition = new SpeechRecognition();
+      const recognition =
+        new SpeechRecognition();
 
       recognition.lang = "pt-BR";
       recognition.continuous = false;
@@ -233,7 +535,8 @@
 
           recognition.start();
 
-          status.textContent = "OUVINDO";
+          status.textContent =
+            "OUVINDO";
 
           message.textContent =
             "Estou ouvindo...";
@@ -266,7 +569,8 @@
 
         }
 
-        message.textContent = transcript;
+        message.textContent =
+          transcript;
 
       };
 
@@ -323,4 +627,4 @@
   </script>
 
 </body>
-</html>
+  </html>
