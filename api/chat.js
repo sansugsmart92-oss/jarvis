@@ -1,12 +1,57 @@
 module.exports = async function handler(req, res) {
 
-  if (req.method !== "POST") {
-    return res.status(405).json({
-      error: "Método não permitido"
-    });
-  }
-
   try {
+
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY não encontrada na Vercel."
+      });
+    }
+
+    // TESTE DIRETO PELO NAVEGADOR
+    if (req.method === "GET") {
+
+      const response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey
+          },
+
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: "Responda apenas: OLÁ JARVIS"
+                  }
+                ]
+              }
+            ]
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      return res.status(response.status).json({
+        teste: true,
+        statusGemini: response.status,
+        resposta: data
+      });
+    }
+
+    // USO NORMAL DO JARVIS
+    if (req.method !== "POST") {
+      return res.status(405).json({
+        error: "Método não permitido"
+      });
+    }
 
     const { message, memories } = req.body || {};
 
@@ -16,33 +61,18 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-
-      console.error("GEMINI_API_KEY não encontrada.");
-
-      return res.status(500).json({
-        error: "GEMINI_API_KEY não está configurada na Vercel."
-      });
-
-    }
-
     const prompt = `
 Você é JARVIS, um assistente pessoal inteligente.
 
 Responda sempre em português do Brasil.
-
 Seja natural, útil e objetivo.
 
-Memórias do usuário:
+Memórias:
 ${memories || "Nenhuma memória registrada."}
 
-Mensagem do usuário:
+Usuário:
 ${message}
 `;
-
-    console.log("Enviando pergunta ao Gemini...");
 
     const response = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
@@ -55,50 +85,29 @@ ${message}
         },
 
         body: JSON.stringify({
-
           contents: [
             {
               role: "user",
-
               parts: [
                 {
                   text: prompt
                 }
               ]
-
             }
           ]
-
         })
       }
     );
 
     const data = await response.json();
 
-    console.log(
-      "Status Gemini:",
-      response.status
-    );
-
-    console.log(
-      "Resposta Gemini:",
-      JSON.stringify(data)
-    );
-
     if (!response.ok) {
 
-      return res.status(500).json({
-
+      return res.status(response.status).json({
         error:
           data?.error?.message ||
-          "O Gemini recusou a solicitação.",
-
-        status:
-          response.status,
-
-        detalhes:
-          data?.error || null
-
+          "Erro do Gemini",
+        detalhes: data?.error || null
       });
 
     }
@@ -109,38 +118,14 @@ ${message}
         .join("")
         .trim();
 
-    if (!reply) {
-
-      return res.status(500).json({
-
-        error:
-          "O Gemini respondeu, mas não enviou texto.",
-
-        detalhes: data
-
-      });
-
-    }
-
     return res.status(200).json({
-
-      reply: reply
-
+      reply: reply || "O Gemini não retornou texto."
     });
 
   } catch (error) {
 
-    console.error(
-      "ERRO INTERNO:",
-      error
-    );
-
     return res.status(500).json({
-
-      error:
-        error?.message ||
-        "Erro interno no cérebro do JARVIS."
-
+      error: error?.message || "Erro interno"
     });
 
   }
