@@ -54,7 +54,7 @@
       box-shadow:
         0 0 20px #008cff,
         inset 0 0 25px #008cff;
-      animation: pulse 2.5s infinite;
+      transition: 0.3s;
     }
 
     .core::before,
@@ -84,6 +84,26 @@
       z-index: 2;
     }
 
+    .listening {
+      animation: listening 0.8s infinite alternate;
+    }
+
+    @keyframes listening {
+      from {
+        transform: scale(1);
+        box-shadow:
+          0 0 20px #008cff,
+          inset 0 0 25px #008cff;
+      }
+
+      to {
+        transform: scale(1.12);
+        box-shadow:
+          0 0 50px #00bfff,
+          inset 0 0 45px #008cff;
+      }
+    }
+
     .status {
       margin-top: 45px;
       font-size: 14px;
@@ -94,7 +114,9 @@
     .message {
       margin-top: 20px;
       color: #8aa8b8;
-      min-height: 25px;
+      min-height: 50px;
+      line-height: 1.5;
+      max-width: 350px;
     }
 
     .button {
@@ -116,16 +138,8 @@
       transform: scale(0.97);
     }
 
-    @keyframes pulse {
-      0%, 100% {
-        transform: scale(1);
-        opacity: 0.8;
-      }
-
-      50% {
-        transform: scale(1.04);
-        opacity: 1;
-      }
+    .error {
+      color: #ff5555;
     }
   </style>
 </head>
@@ -136,23 +150,110 @@
 
     <div class="title">JARVIS</div>
 
-    <div class="core">
+    <div class="core" id="core">
       <div class="center"></div>
     </div>
 
-    <div class="status">
+    <div class="status" id="status">
       SISTEMA ONLINE
     </div>
 
-    <div class="message">
+    <div class="message" id="message">
       Aguardando seu comando...
     </div>
 
-    <button class="button">
+    <button class="button" id="talkButton">
       🎙️ FALAR COM JARVIS
     </button>
 
   </main>
+
+  <script>
+    const button = document.getElementById("talkButton");
+    const status = document.getElementById("status");
+    const message = document.getElementById("message");
+    const core = document.getElementById("core");
+
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      status.textContent = "NÃO SUPORTADO";
+      message.textContent =
+        "Seu navegador não oferece reconhecimento de voz.";
+      message.classList.add("error");
+      button.disabled = true;
+    } else {
+
+      const recognition = new SpeechRecognition();
+
+      recognition.lang = "pt-BR";
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      button.addEventListener("click", () => {
+
+        try {
+          recognition.start();
+
+          status.textContent = "OUVINDO";
+          message.textContent = "Estou ouvindo...";
+          core.classList.add("listening");
+
+          button.textContent = "⏹️ PARAR";
+
+        } catch (error) {
+          console.log(error);
+        }
+      });
+
+      recognition.onresult = (event) => {
+
+        let transcript = "";
+
+        for (
+          let i = event.resultIndex;
+          i < event.results.length;
+          i++
+        ) {
+          transcript += event.results[i][0].transcript;
+        }
+
+        message.textContent = transcript;
+      };
+
+      recognition.onend = () => {
+
+        status.textContent = "SISTEMA ONLINE";
+        core.classList.remove("listening");
+
+        button.textContent = "🎙️ FALAR COM JARVIS";
+
+        if (!message.textContent) {
+          message.textContent = "Aguardando seu comando...";
+        }
+      };
+
+      recognition.onerror = (event) => {
+
+        console.log(event.error);
+
+        core.classList.remove("listening");
+        button.textContent = "🎙️ FALAR COM JARVIS";
+
+        if (event.error === "not-allowed") {
+          status.textContent = "MICROFONE BLOQUEADO";
+          message.textContent =
+            "Permita o acesso ao microfone no navegador.";
+        } else {
+          status.textContent = "ERRO";
+          message.textContent =
+            "Não consegui ouvir. Tente novamente.";
+        }
+      };
+    }
+  </script>
 
 </body>
 </html>
