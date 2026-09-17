@@ -510,8 +510,8 @@
 
       if (error) {
         console.error("Erro ao salvar memória:", error);
-        status.textContent = "ERRO";
-        message.textContent = "Não consegui salvar a memória.";
+        status.textContent = "ERRO AO SALVAR";
+        message.textContent = "Erro ao salvar: " + error.message;
         return false;
       }
 
@@ -609,29 +609,59 @@
 
         message.textContent = transcript;
 
-        // Comandos de memória:
-        // "lembre que..." ou "salve na memória que..."
+        // ========================================
+        // COMANDOS DE MEMÓRIA POR VOZ
+        // ========================================
+
         const textoNormalizado = transcript
           .toLowerCase()
           .normalize("NFD")
-          .replace(/[\\u0300-\\u036f]/g, "");
+          .replace(/[\\u0300-\\u036f]/g, "")
+          .replace(/[.,!?]/g, " ")
+          .replace(/\\s+/g, " ")
+          .trim();
 
         let memoria = null;
 
-        if (textoNormalizado.startsWith("lembre que ")) {
-          memoria = transcript.substring(11).trim();
-        } else if (
-          textoNormalizado.startsWith("salve na memoria que ")
-        ) {
-          memoria = transcript.substring(21).trim();
-        } else if (
-          textoNormalizado.startsWith("salvar na memoria que ")
-        ) {
-          memoria = transcript.substring(22).trim();
+        const comandosMemoria = [
+          "lembre que",
+          "lembre-se que",
+          "lembre se que",
+          "salve na memoria que",
+          "salvar na memoria que",
+          "guarde na memoria que",
+          "guardar na memoria que"
+        ];
+
+        let indiceComando = -1;
+        let comandoEncontrado = "";
+
+        for (const comando of comandosMemoria) {
+          const indice = textoNormalizado.indexOf(comando);
+
+          if (indice !== -1 && (indiceComando === -1 || indice < indiceComando)) {
+            indiceComando = indice;
+            comandoEncontrado = comando;
+          }
         }
 
-        if (memoria) {
-          await salvarMemoria(memoria);
+        if (indiceComando !== -1) {
+
+          memoria = transcript
+            .substring(indiceComando + comandoEncontrado.length)
+            .replace(/^[\\s,.:;-]+/, "")
+            .trim();
+
+          if (memoria) {
+            status.textContent = "SALVANDO MEMÓRIA";
+            message.textContent = "Salvando: " + memoria;
+
+            await salvarMemoria(memoria);
+          } else {
+            status.textContent = "MEMÓRIA";
+            message.textContent = "Não entendi o que devo lembrar.";
+          }
+
         }
 
       };
@@ -689,4 +719,4 @@
   </script>
 
 </body>
-</html>
+  </html>
