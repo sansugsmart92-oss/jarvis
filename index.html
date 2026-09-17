@@ -532,7 +532,76 @@
     ========================================
     */
 
-    async function salvarMemoria(texto) {
+    async function perguntarAoGemini(pergunta) {
+
+  try {
+
+    console.log("Enviando para JARVIS:", pergunta);
+
+    const memorias = await buscarMemorias();
+
+    const contextoMemorias =
+      memorias.length > 0
+        ? memorias
+            .map(item => "- " + item.content)
+            .join("\n")
+        : "Nenhuma memória registrada.";
+
+    const response = await fetch("/api/chat", {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        message: pergunta,
+        memories: contextoMemorias
+      })
+
+    });
+
+    const data = await response.json();
+
+    console.log("Resposta da API:", data);
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        "Erro desconhecido na API."
+      );
+
+    }
+
+    if (!data.reply) {
+
+      throw new Error(
+        "O Gemini não retornou uma resposta."
+      );
+
+    }
+
+    return data.reply;
+
+  } catch (error) {
+
+    console.error(
+      "ERRO COMPLETO DO JARVIS:",
+      error
+    );
+
+    status.textContent = "ERRO NO GEMINI";
+
+    message.textContent =
+      "Erro: " + error.message;
+
+    return null;
+
+  }
+
+    }
 
       const {
         data: { user }
