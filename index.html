@@ -168,7 +168,37 @@
 
   </main>
 
+  <!-- SUPABASE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
+    /*
+      ================================
+      CONFIGURAÇÃO DO SUPABASE
+      ================================
+
+      COLOQUE AQUI:
+
+      1. Project URL
+      2. Publishable key / anon key
+
+      NÃO coloque a service_role key aqui.
+    */
+
+    const SUPABASE_URL = "https://zdkbtdvcjkivqdnrsetb.supabase.co/rest/v1/";
+    const SUPABASE_KEY = "sb_publishable_SvP8vEpNWFoICLVskSlCfQ_8VUmN_PT";
+
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+    console.log("Supabase conectado.");
+  </script>
+
+  <!-- JARVIS / RECONHECIMENTO DE VOZ -->
+  <script>
+
     const button = document.getElementById("talkButton");
     const status = document.getElementById("status");
     const message = document.getElementById("message");
@@ -179,11 +209,16 @@
       window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
+
       status.textContent = "NÃO SUPORTADO";
+
       message.textContent =
         "Seu navegador não oferece reconhecimento de voz.";
+
       message.classList.add("error");
+
       button.disabled = true;
+
     } else {
 
       const recognition = new SpeechRecognition();
@@ -195,17 +230,25 @@
       button.addEventListener("click", () => {
 
         try {
+
           recognition.start();
 
           status.textContent = "OUVINDO";
-          message.textContent = "Estou ouvindo...";
+
+          message.textContent =
+            "Estou ouvindo...";
+
           core.classList.add("listening");
 
-          button.textContent = "⏹️ PARAR";
+          button.textContent =
+            "⏹️ PARAR";
 
         } catch (error) {
+
           console.log(error);
+
         }
+
       });
 
       recognition.onresult = (event) => {
@@ -217,22 +260,33 @@
           i < event.results.length;
           i++
         ) {
-          transcript += event.results[i][0].transcript;
+
+          transcript +=
+            event.results[i][0].transcript;
+
         }
 
         message.textContent = transcript;
+
       };
 
       recognition.onend = () => {
 
-        status.textContent = "SISTEMA ONLINE";
+        status.textContent =
+          "SISTEMA ONLINE";
+
         core.classList.remove("listening");
 
-        button.textContent = "🎙️ FALAR COM JARVIS";
+        button.textContent =
+          "🎙️ FALAR COM JARVIS";
 
         if (!message.textContent) {
-          message.textContent = "Aguardando seu comando...";
+
+          message.textContent =
+            "Aguardando seu comando...";
+
         }
+
       };
 
       recognition.onerror = (event) => {
@@ -240,19 +294,32 @@
         console.log(event.error);
 
         core.classList.remove("listening");
-        button.textContent = "🎙️ FALAR COM JARVIS";
+
+        button.textContent =
+          "🎙️ FALAR COM JARVIS";
 
         if (event.error === "not-allowed") {
-          status.textContent = "MICROFONE BLOQUEADO";
+
+          status.textContent =
+            "MICROFONE BLOQUEADO";
+
           message.textContent =
             "Permita o acesso ao microfone no navegador.";
+
         } else {
-          status.textContent = "ERRO";
+
+          status.textContent =
+            "ERRO";
+
           message.textContent =
             "Não consegui ouvir. Tente novamente.";
+
         }
+
       };
+
     }
+
   </script>
 
 </body>
