@@ -4,9 +4,155 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JARVIS</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #020408;
+      color: #00aaff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .jarvis {
+      width: 100%;
+      max-width: 500px;
+      min-height: 100vh;
+      padding: 40px 25px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .title {
+      font-size: 34px;
+      letter-spacing: 12px;
+      margin-bottom: 55px;
+      text-shadow: 0 0 15px #008cff;
+    }
+
+    .core {
+      width: 190px;
+      height: 190px;
+      border: 2px solid #008cff;
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 0 20px #008cff,
+        inset 0 0 25px #008cff;
+      animation: pulse 2.5s infinite;
+    }
+
+    .core::before,
+    .core::after {
+      content: "";
+      position: absolute;
+      border: 1px solid #008cff;
+      border-radius: 50%;
+    }
+
+    .core::before {
+      width: 135px;
+      height: 135px;
+    }
+
+    .core::after {
+      width: 75px;
+      height: 75px;
+    }
+
+    .center {
+      width: 25px;
+      height: 25px;
+      background: #00bfff;
+      border-radius: 50%;
+      box-shadow: 0 0 30px #00bfff;
+      z-index: 2;
+    }
+
+    .status {
+      margin-top: 45px;
+      font-size: 14px;
+      letter-spacing: 4px;
+      color: #6fd7ff;
+    }
+
+    .message {
+      margin-top: 20px;
+      color: #8aa8b8;
+      min-height: 25px;
+    }
+
+    .button {
+      margin-top: 45px;
+      width: 100%;
+      max-width: 300px;
+      padding: 17px;
+      border: 1px solid #008cff;
+      border-radius: 10px;
+      background: rgba(0, 140, 255, 0.08);
+      color: #00bfff;
+      font-size: 16px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0, 140, 255, 0.3);
+    }
+
+    .button:active {
+      transform: scale(0.97);
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+
+      50% {
+        transform: scale(1.04);
+        opacity: 1;
+      }
+    }
+  </style>
 </head>
+
 <body>
-  <h1>JARVIS</h1>
-  <p>Sistema iniciado.</p>
+
+  <main class="jarvis">
+
+    <div class="title">JARVIS</div>
+
+    <div class="core">
+      <div class="center"></div>
+    </div>
+
+    <div class="status">
+      SISTEMA ONLINE
+    </div>
+
+    <div class="message">
+      Aguardando seu comando...
+    </div>
+
+    <button class="button">
+      🎙️ FALAR COM JARVIS
+    </button>
+
+  </main>
+
 </body>
 </html>
