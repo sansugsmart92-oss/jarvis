@@ -20,7 +20,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     .jarvis {
@@ -41,8 +41,6 @@
       margin-bottom: 35px;
       text-shadow: 0 0 15px #008cff;
     }
-
-    /* LOGIN */
 
     .login {
       width: 100%;
@@ -78,6 +76,10 @@
       font-size: 14px;
     }
 
+    .login button:active {
+      transform: scale(0.97);
+    }
+
     .loginMessage {
       margin-top: 12px;
       color: #8aa8b8;
@@ -92,8 +94,6 @@
       font-size: 13px;
       cursor: pointer;
     }
-
-    /* CORE */
 
     .core {
       width: 190px;
@@ -167,9 +167,10 @@
     .message {
       margin-top: 20px;
       color: #8aa8b8;
-      min-height: 50px;
+      min-height: 70px;
       line-height: 1.5;
       max-width: 350px;
+      white-space: pre-wrap;
     }
 
     .button {
@@ -191,12 +192,31 @@
       transform: scale(0.97);
     }
 
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .error {
       color: #ff5555;
     }
 
     .hidden {
-      display: none;
+      display: none !important;
+    }
+
+    .thinking {
+      animation: thinking 1s infinite alternate;
+    }
+
+    @keyframes thinking {
+      from {
+        opacity: 0.6;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
   </style>
 </head>
@@ -277,6 +297,10 @@
     const SUPABASE_URL =
       "https://zdkbtdvcjkivqdnrsetb.supabase.co";
 
+    /*
+      COLOQUE A SUA CHAVE PUBLICÁVEL DO SUPABASE AQUI
+    */
+
     const SUPABASE_KEY =
       "sb_publishable_SvP8vEpNWFoICLVskSlCfQ_8VUmN_PT";
 
@@ -318,6 +342,18 @@
     const loginMessage =
       document.getElementById("loginMessage");
 
+    const status =
+      document.getElementById("status");
+
+    const message =
+      document.getElementById("message");
+
+    const core =
+      document.getElementById("core");
+
+    const button =
+      document.getElementById("talkButton");
+
     /*
     ========================================
     LOGIN
@@ -342,8 +378,8 @@
 
       const { data, error } =
         await supabaseClient.auth.signInWithPassword({
-          email: email,
-          password: password
+          email,
+          password
         });
 
       if (error) {
@@ -353,8 +389,6 @@
 
         return;
       }
-
-      console.log("Usuário conectado:", data.user);
 
       loginMessage.textContent =
         "Login realizado!";
@@ -395,8 +429,8 @@
 
       const { data, error } =
         await supabaseClient.auth.signUp({
-          email: email,
-          password: password
+          email,
+          password
         });
 
       if (error) {
@@ -436,6 +470,12 @@
       jarvisInterface.classList.remove("hidden");
 
       logoutButton.style.display = "block";
+
+      status.textContent =
+        "SISTEMA ONLINE";
+
+      message.textContent =
+        "Aguardando seu comando...";
 
       console.log(
         "JARVIS conectado ao usuário:",
@@ -485,9 +525,11 @@
 
     }
 
-    // ========================================
-    // MEMÓRIA
-    // ========================================
+    /*
+    ========================================
+    SALVAR MEMÓRIA
+    ========================================
+    */
 
     async function salvarMemoria(texto) {
 
@@ -496,49 +538,229 @@
       } = await supabaseClient.auth.getUser();
 
       if (!user) {
+
         status.textContent = "ERRO";
-        message.textContent = "Faça login para salvar uma memória.";
+
+        message.textContent =
+          "Faça login para salvar uma memória.";
+
         return false;
       }
 
-      const { error } = await supabaseClient
-        .from("memories")
-        .insert({
-          user_id: user.id,
-          content: texto
-        });
+      const { error } =
+        await supabaseClient
+          .from("memories")
+          .insert({
+            user_id: user.id,
+            content: texto
+          });
 
       if (error) {
-        console.error("Erro ao salvar memória:", error);
-        status.textContent = "ERRO AO SALVAR";
-        message.textContent = "Erro ao salvar: " + error.message;
+
+        console.error(
+          "Erro ao salvar memória:",
+          error
+        );
+
+        status.textContent =
+          "ERRO AO SALVAR";
+
+        message.textContent =
+          "Erro ao salvar memória.";
+
         return false;
       }
 
-      console.log("Memória salva:", texto);
-      status.textContent = "MEMÓRIA SALVA";
-      message.textContent = "Lembrete guardado: " + texto;
+      status.textContent =
+        "MEMÓRIA SALVA";
+
+      message.textContent =
+        "Entendido. Vou lembrar disso.";
+
       return true;
+
     }
 
-    verificarUsuario();
+    /*
+    ========================================
+    BUSCAR MEMÓRIAS
+    ========================================
+    */
 
-  </script>
+    async function buscarMemorias() {
 
-  <!-- RECONHECIMENTO DE VOZ -->
-  <script>
+      const {
+        data: { user }
+      } = await supabaseClient.auth.getUser();
 
-    const button =
-      document.getElementById("talkButton");
+      if (!user) {
+        return [];
+      }
 
-    const status =
-      document.getElementById("status");
+      const { data, error } =
+        await supabaseClient
+          .from("memories")
+          .select("content")
+          .eq("user_id", user.id)
+          .order("created_at", {
+            ascending: false
+          })
+          .limit(30);
 
-    const message =
-      document.getElementById("message");
+      if (error) {
 
-    const core =
-      document.getElementById("core");
+        console.error(
+          "Erro ao buscar memórias:",
+          error
+        );
+
+        return [];
+      }
+
+      return data || [];
+
+    }
+
+    /*
+    ========================================
+    CONVERSAR COM GEMINI
+    ========================================
+    */
+
+    async function perguntarAoGemini(pergunta) {
+
+      try {
+
+        const memorias =
+          await buscarMemorias();
+
+        const contextoMemorias =
+          memorias.length > 0
+            ? memorias
+                .map(item => "- " + item.content)
+                .join("\n")
+            : "Nenhuma memória registrada.";
+
+        const response =
+          await fetch("/api/chat", {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+              message: pergunta,
+              memories: contextoMemorias
+            })
+
+          });
+
+        if (!response.ok) {
+
+          throw new Error(
+            "Falha na comunicação com o JARVIS."
+          );
+
+        }
+
+        const data =
+          await response.json();
+
+        if (!data.reply) {
+
+          throw new Error(
+            "O Gemini não retornou uma resposta."
+          );
+
+        }
+
+        return data.reply;
+
+      } catch (error) {
+
+        console.error(
+          "Erro Gemini:",
+          error
+        );
+
+        return "Não consegui processar sua solicitação agora.";
+
+      }
+
+    }
+
+    /*
+    ========================================
+    COMANDO DE MEMÓRIA
+    ========================================
+    */
+
+    async function processarComandoMemoria(texto) {
+
+      const normalizado =
+        texto
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[.,!?]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      const comandos = [
+        "lembre que",
+        "lembre se que",
+        "salvar a memoria",
+        "salvar na memoria que",
+        "salve na memoria que",
+        "guarde na memoria que",
+        "guardar na memoria que",
+        "memorize que",
+        "guarde que"
+      ];
+
+      let indice = -1;
+      let comandoEncontrado = "";
+
+      for (const comando of comandos) {
+
+        const posicao =
+          normalizado.indexOf(comando);
+
+        if (
+          posicao !== -1 &&
+          (indice === -1 || posicao < indice)
+        ) {
+
+          indice = posicao;
+          comandoEncontrado = comando;
+
+        }
+
+      }
+
+      if (indice === -1) {
+        return null;
+      }
+
+      const memoria =
+        texto
+          .substring(
+            indice + comandoEncontrado.length
+          )
+          .replace(/^[\s,.:;-]+/, "")
+          .trim();
+
+      return memoria || null;
+
+    }
+
+    /*
+    ========================================
+    RECONHECIMENTO DE VOZ
+    ========================================
+    */
 
     const SpeechRecognition =
       window.SpeechRecognition ||
@@ -562,7 +784,9 @@
         new SpeechRecognition();
 
       recognition.lang = "pt-BR";
+
       recognition.continuous = false;
+
       recognition.interimResults = true;
 
       button.addEventListener("click", () => {
@@ -580,142 +804,168 @@
           core.classList.add("listening");
 
           button.textContent =
-            "⏹️ PARAR";
+            "⏹️ OUVINDO...";
 
         } catch (error) {
 
-          console.log(error);
+          console.log(
+            "Microfone:",
+            error
+          );
 
         }
 
       });
 
-      recognition.onresult = async (event) => {
+      recognition.onresult =
+        async (event) => {
 
-        let transcript = "";
+          let transcript = "";
 
-        for (
-          let i = event.resultIndex;
-          i < event.results.length;
-          i++
-        ) {
+          for (
+            let i = event.resultIndex;
+            i < event.results.length;
+            i++
+          ) {
 
-          transcript +=
-            event.results[i][0].transcript;
+            transcript +=
+              event.results[i][0].transcript;
 
-        }
-
-        transcript = transcript.trim();
-
-        message.textContent = transcript;
-
-        // ========================================
-        // COMANDOS DE MEMÓRIA POR VOZ
-        // ========================================
-
-        const textoNormalizado = transcript
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\\u0300-\\u036f]/g, "")
-          .replace(/[.,!?]/g, " ")
-          .replace(/\\s+/g, " ")
-          .trim();
-
-        let memoria = null;
-
-        const comandosMemoria = [
-          "lembre que",
-          "lembre-se que",
-          "lembre se que",
-          "salvar a memoria",
-          "salve na memoria que",
-          "salvar na memoria que",
-          "guarde na memoria que",
-          "guardar na memoria que"
-        ];
-
-        let indiceComando = -1;
-        let comandoEncontrado = "";
-
-        for (const comando of comandosMemoria) {
-          const indice = textoNormalizado.indexOf(comando);
-
-          if (indice !== -1 && (indiceComando === -1 || indice < indiceComando)) {
-            indiceComando = indice;
-            comandoEncontrado = comando;
           }
-        }
 
-        if (indiceComando !== -1) {
+          transcript =
+            transcript.trim();
 
-          memoria = transcript
-            .substring(indiceComando + comandoEncontrado.length)
-            .replace(/^[\\s,.:;-]+/, "")
-            .trim();
+          if (!transcript) {
+            return;
+          }
+
+          message.textContent =
+            transcript;
+
+          /*
+          ========================================
+          MEMÓRIA
+          ========================================
+          */
+
+          const memoria =
+            await processarComandoMemoria(
+              transcript
+            );
 
           if (memoria) {
-            status.textContent = "SALVANDO MEMÓRIA";
-            message.textContent = "Salvando: " + memoria;
 
-            await salvarMemoria(memoria);
-          } else {
-            status.textContent = "MEMÓRIA";
-            message.textContent = "Não entendi o que devo lembrar.";
+            status.textContent =
+              "SALVANDO MEMÓRIA";
+
+            message.textContent =
+              "Salvando: " + memoria;
+
+            await salvarMemoria(
+              memoria
+            );
+
+            return;
           }
 
-        }
+          /*
+          ========================================
+          GEMINI
+          ========================================
+          */
 
-      };
+          status.textContent =
+            "JARVIS PROCESSANDO";
+
+          core.classList.add("thinking");
+
+          message.textContent =
+            "Processando...";
+
+          const resposta =
+            await perguntarAoGemini(
+              transcript
+            );
+
+          core.classList.remove(
+            "thinking"
+          );
+
+          status.textContent =
+            "JARVIS ONLINE";
+
+          message.textContent =
+            resposta;
+
+        };
 
       recognition.onend = () => {
 
-        status.textContent =
-          "SISTEMA ONLINE";
-
-        core.classList.remove("listening");
+        core.classList.remove(
+          "listening"
+        );
 
         button.textContent =
           "🎙️ FALAR COM JARVIS";
 
-        if (!message.textContent) {
+        if (
+          status.textContent === "OUVINDO"
+        ) {
 
-          message.textContent =
-            "Aguardando seu comando...";
+          status.textContent =
+            "SISTEMA ONLINE";
 
         }
 
       };
 
-      recognition.onerror = (event) => {
+      recognition.onerror =
+        (event) => {
 
-        console.log(event.error);
+          console.log(
+            "Erro de voz:",
+            event.error
+          );
 
-        core.classList.remove("listening");
+          core.classList.remove(
+            "listening"
+          );
 
-        button.textContent =
-          "🎙️ FALAR COM JARVIS";
+          button.textContent =
+            "🎙️ FALAR COM JARVIS";
 
-        if (event.error === "not-allowed") {
+          if (
+            event.error === "not-allowed"
+          ) {
 
-          status.textContent =
-            "MICROFONE BLOQUEADO";
+            status.textContent =
+              "MICROFONE BLOQUEADO";
 
-          message.textContent =
-            "Permita o acesso ao microfone no navegador.";
+            message.textContent =
+              "Permita o acesso ao microfone no navegador.";
 
-        } else {
+          } else {
 
-          status.textContent =
-            "ERRO";
+            status.textContent =
+              "ERRO DE VOZ";
 
-          message.textContent =
-            "Não consegui ouvir. Tente novamente.";
+            message.textContent =
+              "Não consegui ouvir. Tente novamente.";
 
-        }
+          }
 
-      };
+        };
 
     }
+
+    /*
+    ========================================
+    INICIAR
+    ========================================
+    */
+
+    verificarUsuario();
 
   </script>
 
